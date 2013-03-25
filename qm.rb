@@ -102,9 +102,41 @@ class QM
     end
     return res
   end
+
+  ## convert symbolic into array of minimums
+  def symbol2Minimum(allEssentials)
+    res = []
+    allEssentials.each{|str| res << [str]}
+    operated = true
+    while(operated)
+      operated = false
+      (0..res.size - 1).each do |i|
+        (0..res[i].size - 1).each do |j|
+          if(index = res[i][j].index('-'))
+          zero = res[i][j].clone
+          one = res[i][j].clone
+          zero[index] = '0'
+          one[index] = '1'
+          res[i][j] = zero
+          res[i] << one
+          operated = true
+          res[i].uniq!
+          end
+        end
+      end
+    end
+    (0..res.size - 1).each do |i|
+      (0..res[i].size - 1).each do |j|
+        res[i][j] = res[i][j].to_i(2)
+      end
+    end
+    return res
+  end
+  
 end
 
 qm = QM.new
 p min = qm.getInput
 firstCol = qm.genFirstCol(min)
-p qm.genAllEssentials(firstCol)
+p allEssentials = qm.genAllEssentials(firstCol)
+p qm.symbol2Minimum(allEssentials)
