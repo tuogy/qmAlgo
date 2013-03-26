@@ -31,21 +31,24 @@ class QM
     end
     @d = dlist.clone
     @all = @m + @d
+    if(@all.empty?)
+      return
+    end
+    @level = Math.log2(@all.max).floor + 1
   end
   
   ## generate the first column from [3,5,8,10]
   ## return the first column [[],[['1000',0]],[['0011',0],['0101',0],['1010',0]],[],[]]
   ## ['xxxx',0] stands for it is not essential
   ## ['xxxx',1] stands for it is essential
-  def genFirstCol(minterm)
-    level = Math.log2(minterm.max).floor + 1
-    @level = level
-    res = Array.new(level + 1)
-    (0..level).each {|i| res[i] = []}
+  def genFirstCol()
+    minterm = @all.clone
+    res = Array.new(@level + 1)
+    (0..@level).each {|i| res[i] = []}
     minterm.each do |i|
       binaryString = i.to_s(2)
       ones = binaryString.count('1')
-      regularBinaryString = '0' * (level - binaryString.size) + binaryString
+      regularBinaryString = '0' * (@level - binaryString.size) + binaryString
       res[ones] << [regularBinaryString, 1]
     end
     return res
@@ -150,20 +153,20 @@ class QM
   end
   
   #generate minterm not covered by essentials
-  def genMinOutOfEssentials(minterms)
+  def genMinOutOfEssentials()
     res = @m.clone
     @m.each do |i|
       count = 0
       index = nil
-      (0..minterms.size - 1).each do |j|
-        if(minterms[j].include?(i))
+      (0..@essentials.size - 1).each do |j|
+        if(@essentials[j].include?(i))
           count += 1
           index = j
         end
       end
       if(count == 1 and not @result.include?(index))
         @result << index
-        minterms[index].each do |toDelete|
+        @essentials[index].each do |toDelete|
           res.delete(toDelete)
         end
       end
@@ -172,7 +175,7 @@ class QM
   end
   
   # use the BFS algorithm to cover the rest minterms
-  def bfsForCover(min,essens)
+  def bfsForCover(min)
     if(min.empty?)
       return
     end
@@ -183,11 +186,11 @@ class QM
       new_min = []
       count = 0
       min.each do |i|
-        essens.each do |j|
+        @essentials.each do |j|
           if((i - j).empty?)
-            coverSet = count.to_s(essens.size)
+            coverSet = count.to_s(@essentials.size)
             coverSet.each_char do |i|
-              @result << i.to_i(essens.size)
+              @result << i.to_i(@essentials.size)
             end
             return
           end
@@ -198,6 +201,29 @@ class QM
     end
   end
   
+  # use the greedy algorithm to get a better-but-not-best cover
+  def greedyForCover(min)
+    if(min.empty?)
+      return
+    end
+    while true do 
+      index = nil
+      size = min.size
+      @essentials.each_index do |i|
+        if((min - @essentials[i]).size < size)
+          index = i
+          size = (min - @essentials[i]).size
+        end
+      end
+      min = min - @essentials[index]
+      @result << index
+      if(size == 0)
+        return
+      end
+    end
+  end
+
+
   # tranfer the index of primes back to symbolic expressions
   def recoverSymbol
     res = "A = "
@@ -227,12 +253,24 @@ class QM
 end
 
 qm = QM.new
-p min = qm.getInput
-p firstCol = qm.genFirstCol(min)
-p allEssentials = qm.genAllEssentials(firstCol)
-p essens = qm.symbol2Minterm(allEssentials)
-p min = qm.genMinOutOfEssentials(essens)
-p essens.size
-qm.bfsForCover(min,essens)
-p qm.result
-puts qm.recoverSymbol
+min = qm.getInput
+if(qm.m.size == 0)
+  puts "A = 0"
+elsif(qm.m.size == 2 ** (qm.level - 1))
+  puts "A = 1"
+else
+  puts "Generating essential primes..."
+  firstCol = qm.genFirstCol
+  allEssentials = qm.genAllEssentials(firstCol)
+  qm.symbol2Minterm(allEssentials)
+  puts "essentials generated. try to cover the rest minterms..."
+  min = qm.genMinOutOfEssentials
+  if(qm.essentials.size > 30)
+    puts "The number of essentials exceeds 30, using greedy algorithm instead of BFS to quickly generate a better-but-not-best solution."
+    qm.greedyForCover(min)
+  else
+    puts "Using BFS to generate the best solution. It may take time since it is NP-Hard."
+    qm.bfsForCover(min)
+  end
+  puts qm.recoverSymbol
+end
