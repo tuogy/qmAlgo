@@ -1,45 +1,48 @@
-class QM
 ## Quine-McCluskey algorithm
+
+class QM
   attr_accessor :m, :d, :all, :level, :result, :essentials
   def initialize
     @result = []
     @essentials = []
   end
 
-
-  ## get input from keyborad like '3+5+8+10'
+  ## get input from file
   ## return [3,5,8,10]
   def getInput
-    puts "input m(.): "
-    string = gets
-    string.strip!
-    mlist = string.split("+")
-    (0..mlist.size - 1).each do |i|
-      mlist[i] = mlist[i].to_i
+    mlist = []
+    mintermFile = File.new('minterm','r')
+    mintermFile.each_line do |line|
+      line = line.strip
+      if(line.empty?)
+        next
+      end
+      mlist << line.to_i
     end
     @m = mlist.clone
-    puts "input d(.): "
-    string = gets
-    string.strip!
-    dlist = string.split("+")
-    (0..dlist.size - 1).each do |i|
-      dlist[i] = dlist[i].to_i
+    dlist = []
+    dontknowFile = File.new('dontknow','r')
+    dontknowFile.each_line do |line|
+      line = line.strip
+      if(line.empty?)
+        next
+      end
+      dlist << line.to_i
     end
     @d = dlist.clone
     @all = @m + @d
   end
-
   
   ## generate the first column from [3,5,8,10]
   ## return the first column [[],[['1000',0]],[['0011',0],['0101',0],['1010',0]],[],[]]
-  ## ['xxxx',0] stands for it is not prime
-  ## ['xxxx',1] stands for it is prime
-  def genFirstCol(minimum)
-    level = Math.log2(minimum.max).floor + 1
+  ## ['xxxx',0] stands for it is not essential
+  ## ['xxxx',1] stands for it is essential
+  def genFirstCol(minterm)
+    level = Math.log2(minterm.max).floor + 1
     @level = level
     res = Array.new(level + 1)
     (0..level).each {|i| res[i] = []}
-    minimum.each do |i|
+    minterm.each do |i|
       binaryString = i.to_s(2)
       ones = binaryString.count('1')
       regularBinaryString = '0' * (level - binaryString.size) + binaryString
@@ -115,8 +118,8 @@ class QM
     return res
   end
 
-  ## convert symbolic into array of minimums
-  def symbol2Minimum(allEssentials)
+  ## convert symbolic into array of minterms
+  def symbol2Minterm(allEssentials)
     res = []
     allEssentials.each{|str| res << [str]}
     operated = true
@@ -146,21 +149,21 @@ class QM
     return res
   end
   
-  #generate minimum not covered by essentials
-  def genMinOutOfEssentials(minimums)
+  #generate minterm not covered by essentials
+  def genMinOutOfEssentials(minterms)
     res = @m.clone
     @m.each do |i|
       count = 0
       index = nil
-      (0..minimums.size - 1).each do |j|
-        if(minimums[j].include?(i))
+      (0..minterms.size - 1).each do |j|
+        if(minterms[j].include?(i))
           count += 1
           index = j
         end
       end
-      if(count == 1)
+      if(count == 1 and not @result.include?(index))
         @result << index
-        minimums[index].each do |toDelete|
+        minterms[index].each do |toDelete|
           res.delete(toDelete)
         end
       end
@@ -168,7 +171,11 @@ class QM
     return res
   end
   
+  # use the BFS algorithm to cover the rest minterms
   def bfsForCover(min,essens)
+    if(min.empty?)
+      return
+    end
     new_min = []
     new_min <<  min
     while true do
@@ -178,7 +185,10 @@ class QM
       min.each do |i|
         essens.each do |j|
           if((i - j).empty?)
-            @result << count
+            coverSet = count.to_s(essens.size)
+            coverSet.each_char do |i|
+              @result << i.to_i(essens.size)
+            end
             return
           end
           count += 1
@@ -188,29 +198,41 @@ class QM
     end
   end
   
+  # tranfer the index of primes back to symbolic expressions
   def recoverSymbol
     res = "A = "
+    logic_series = ""
+    alphabet_series = ""
+
     @result.each do |i|
       logic = ""
+      alphabet = ""
       (0..@level - 1).each do |j|
         if(@essentials[i].all?{|k| (k >> j) & 1 == 1})
           logic = logic + "A#{j}"
+          alphabet = alphabet + (9 + @level - j).to_s(10 + @level).capitalize
         elsif(@essentials[i].all?{|k| (k >> j) & 1 == 0})
           logic = logic + "A#{j}\'"
+          alphabet = alphabet + (9 + @level - j).to_s(10 + @level).capitalize + "\'"
         end
       end
-      res = res + (res.length == 4 ? '' : '+') +  logic
+      logic_series = logic_series + (logic_series.empty? ? '' : '+') +  logic
+      alphabet_series = alphabet_series + (alphabet_series.empty? ? '' : '+') +  alphabet
     end
+    res = res + logic_series + "\n"
+    res = res + "  =  " + alphabet_series
     return res
   end
 
 end
 
 qm = QM.new
-min = qm.getInput
-firstCol = qm.genFirstCol(min)
-allEssentials = qm.genAllEssentials(firstCol)
-essens = qm.symbol2Minimum(allEssentials)
-min = qm.genMinOutOfEssentials(essens)
+p min = qm.getInput
+p firstCol = qm.genFirstCol(min)
+p allEssentials = qm.genAllEssentials(firstCol)
+p essens = qm.symbol2Minterm(allEssentials)
+p min = qm.genMinOutOfEssentials(essens)
+p essens.size
 qm.bfsForCover(min,essens)
+p qm.result
 puts qm.recoverSymbol

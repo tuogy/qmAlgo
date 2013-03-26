@@ -1,0 +1,45 @@
+Quine-McClusKey Algorithm
+
+Script Language:
+Ruby (Version >= 1.9.1)
+
+Function:
+Generate the simplest form of a logical expression
+
+Input:
+Minterms of the expression
+  Written in the file ./minterm;
+  LF follows every number;
+  each number when transferred into binary, i.e. (q_n q_n-1 ... q_1 q_0), represents the minterm A_i (if q_i == 1) or  A_i'(if q_i == 0);
+  NOTICE THAT THERE IS A 'LF' AFTER THE LAST NUMBER;
+
+Don't-know terms of the expression
+  Written in the file ./dontknow;
+  the rest are the same as minterms;
+
+Output:
+The symbolic expression of the simplest form;
+
+Example
+=================
+
+Input
+
+The same as the current file;
+
+Output
+
+A = A2A3'+A0'A2'A3+A0A1'A3
+
+=================
+
+
+How to run the script:
+
+Open a terminal and run
+
+$ ruby ./qm.rb
+
+if ruby environment is not installed, please run
+
+$ sudo apt-get install ruby1.9.1
