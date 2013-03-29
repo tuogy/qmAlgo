@@ -256,13 +256,13 @@ qm = QM.new
 min = qm.getInput
 if(qm.m.size == 0)
   puts "A = 0"
-elsif(qm.m.size == 2 ** (qm.level - 1))
+elsif(qm.m.size == 2 ** (qm.level))
   puts "A = 1"
 else
   puts "Generating essential primes..."
   firstCol = qm.genFirstCol
   allEssentials = qm.genAllEssentials(firstCol)
-  qm.symbol2Minterm(allEssentials)
+  qm.symboml2Minterm(allEssentials)
   puts "essentials generated. try to cover the rest minterms..."
   min = qm.genMinOutOfEssentials
   if(qm.essentials.size > 30)
