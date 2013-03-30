@@ -226,7 +226,7 @@ class QM
 
   # tranfer the index of primes back to symbolic expressions
   def recoverSymbol
-    res = "A = "
+    res = "ans = "
     logic_series = ""
     alphabet_series = ""
 
@@ -255,14 +255,14 @@ end
 qm = QM.new
 min = qm.getInput
 if(qm.m.size == 0)
-  puts "A = 0"
+  puts "ans = 0"
 elsif(qm.m.size == 2 ** (qm.level))
-  puts "A = 1"
+  puts "ans = 1"
 else
   puts "Generating essential primes..."
   firstCol = qm.genFirstCol
   allEssentials = qm.genAllEssentials(firstCol)
-  qm.symboml2Minterm(allEssentials)
+  qm.symbol2Minterm(allEssentials)
   puts "essentials generated. try to cover the rest minterms..."
   min = qm.genMinOutOfEssentials
   if(qm.essentials.size > 30)
